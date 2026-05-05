@@ -53,6 +53,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include "CommonLib/TimeProfiler.h"
+
 //! \ingroup EncoderLib
 //! \{
 
@@ -754,6 +756,12 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 
     if( currTestMode.type == ETM_INTER_ME )
     {
+#if ENABLE_TIME_PROFILE
+    TimeProfiler::start(INTER_OVERALL);
+    
+    STAGE interStage = (STAGE) partitioner.currQtDepth;
+    TimeProfiler::start(interStage);
+#endif
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
         const bool skipAltHpelIF = (currTestMode.getAmvrSearchMode() == EncTestMode::AmvrSearchMode::HALF_PEL)
@@ -775,6 +783,11 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
         splitRdCostBest[CTU_LEVEL] = bestCS->cost;
         tempCS->splitRdCostBest = splitRdCostBest;
       }
+
+#if ENABLE_TIME_PROFILE
+    TimeProfiler::stop(interStage);
+    TimeProfiler::stop(INTER_OVERALL);
+#endif
 
     }
     else if (currTestMode.type == ETM_HASH_INTER)

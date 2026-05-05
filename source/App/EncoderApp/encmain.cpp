@@ -44,6 +44,8 @@
 #include "EncApp.h"
 #include "Utilities/program_options_lite.h"
 
+#include "CommonLib/TimeProfiler.h"
+
 //! \ingroup EncoderApp
 //! \{
 
@@ -82,6 +84,13 @@ static void printMacroSettings()
 
 int main(int argc, char* argv[])
 {
+
+#if ENABLE_TIME_PROFILE
+  TimeProfiler::init();
+  TimeProfiler::start(ENCODER_OVERALL);
+#endif
+
+
   // print information
   fprintf( stdout, "\n" );
   fprintf( stdout, "VVCSoftware: VTM Encoder Version %s ", VTM_VERSION );
@@ -385,6 +394,11 @@ int main(int argc, char* argv[])
   printf(" Total Time: %12.3f sec. [user] %12.3f sec. [elapsed]\n",
          (endClock - startClock) * 1.0 / CLOCKS_PER_SEC,
          encTime / 1000.0);
+#endif
+
+#if ENABLE_TIME_PROFILE
+  TimeProfiler::stop(ENCODER_OVERALL);
+  TimeProfiler::report();
 #endif
 
   return 0;

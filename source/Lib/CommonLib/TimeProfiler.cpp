@@ -40,11 +40,12 @@ void TimeProfiler::stop( STAGE s ) {
 }
 
 void TimeProfiler::report() { 
-    std::cout << std::endl << " Time Profiling" << std::endl;
+    std::cout << std::endl << " Time Profile" << std::endl;
     std::cout << "Stage;Time(ms)" << std::endl;
     for( size_t i = 0; i < NUM_STAGES; ++i ) {
         STAGE s = (STAGE) i;
         double duration = durations[i].count();
         std::cout << stageToString[s] << ";" << duration << std::endl;
     }
+    std::cout << "End time profile";
 }

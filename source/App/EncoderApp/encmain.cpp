@@ -45,6 +45,7 @@
 #include "Utilities/program_options_lite.h"
 
 #include "CommonLib/TimeProfiler.h"
+#include "EncoderLib/OptTechDT.h"
 
 //! \ingroup EncoderApp
 //! \{
@@ -192,6 +193,15 @@ int main(int argc, char* argv[])
 
     layerIdx++;
   } while( layerIdx < pcEncApp.size() );
+
+#if ENABLE_OPT_TECH_DT
+  OptTechDT::init( 
+    pcEncApp[0]->getSourceWidth(), 
+    pcEncApp[0]->getSourceHeight(),
+    pcEncApp[0]->getFramesToBeEncoded(),
+    pcEncApp[0]->getEncoderConfig(),
+    pcEncApp[0]->getQP() );
+#endif
 
   delete[] layerArgv;
 

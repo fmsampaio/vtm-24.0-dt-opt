@@ -54,6 +54,7 @@
 #include <algorithm>
 
 #include "CommonLib/TimeProfiler.h"
+#include "OptTechDT.h"
 
 //! \ingroup EncoderLib
 //! \{
@@ -320,6 +321,34 @@ void EncCu::compressCtu(CodingStructure &cs, const UnitArea &area, const unsigne
   // reset context states and uninit context pointer
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
   m_CurrCtx                  = 0;
+
+#if ENABLE_OPT_TECH_DT
+
+#if ENABLE_TIME_PROFILE
+  TimeProfiler::start(FEATURES_EXTRACTION);
+#endif
+
+  // Felipe: fill depth map
+  const ChannelType chType = ChannelType( 0 );
+  for( const CodingUnit &cu : cs.traverseCUs( CS::getArea( cs, area, chType ), chType ) ) {
+    int framePoc = cu.slice->getPOC();
+    int xBlk = cu.lx();
+    int yBlk = cu.ly();
+    int wBlk = cu.lwidth();
+    int hBlk = cu.lheight();
+    int depth = (int) cu.qtDepth;
+
+#if DBG_REPORT_DEPTH_MAPS
+    std::cout << "[DBG] Updating depth map... Frame (" << framePoc << ") CU (" << xBlk << "," << yBlk << ")\n";
+#endif
+
+    OptTechDT::updateDepthMap(framePoc, xBlk, yBlk, wBlk, hBlk, depth);
+
+#if ENABLE_TIME_PROFILE
+  TimeProfiler::start(FEATURES_EXTRACTION);
+#endif
+  }
+#endif
 
 
   // Ensure that a coding was found
@@ -704,6 +733,55 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     m_bestBcwCost.fill(std::numeric_limits<double>::max());
     m_bestBcwIdx.fill(BCW_NUM);
   }
+
+#if ENABLE_OPT_TECH_DT
+  if(tempCS->slice->getSliceType() != I_SLICE) {
+    if(partitioner.currQtDepth == partitioner.currDepth) {
+
+#if ENABLE_TIME_PROFILE
+      TimeProfiler::start(FEATURES_EXTRACTION);
+#endif
+      
+      int currQtDepth = partitioner.currQtDepth;
+      
+      int currPoc = tempCS->slice->getPOC();
+      // int refPoc = tempCS->slice->getRefPic(REF_PIC_LIST_0, 0)->getPOC();
+
+      PelUnitBuf recoBuff = OptTechDT::getRefPicBuf(currPoc, tempCS->slice);
+      PelUnitBuf origBuff = tempCS->slice->getPic()->getOrigBuf();
+
+      int xBlk = partitioner.currArea().lx();
+      int yBlk = partitioner.currArea().ly();
+      int wBlk = partitioner.currArea().lwidth();
+      int hBlk = partitioner.currArea().lheight();
+      
+      // Features extraction
+      // QP
+      int ft_qp = OptTechDT::quantPar;
+
+      // Encoder configuration
+      int ft_config = OptTechDT::encoderConfig;
+
+      // Frame Height
+      int ft_height = tempCS->slice->getPic()->lheight();
+      
+      // Previous split
+      int ft_previousSplit = OptTechDT::isPreviousSplit(currPoc, xBlk, yBlk, currQtDepth);
+
+      // Block variance
+      double ft_blockVar = OptTechDT::calculateBlockVariance(xBlk, yBlk, wBlk, hBlk, origBuff);
+      
+      // Diff variance
+      double ft_diffVar = OptTechDT::calculateDiffVariance(xBlk, yBlk, wBlk, hBlk, origBuff, recoBuff);
+
+#if ENABLE_TIME_PROFILE
+      TimeProfiler::stop(FEATURES_EXTRACTION);
+#endif
+      OptTechDT::performModelDT(currQtDepth, ft_qp, ft_blockVar, ft_diffVar, ft_previousSplit, ft_height, ft_config);
+    }
+  }
+#endif
+
   do
   {
     for (int i = compBegin; i < (compBegin + numComp); i++)
@@ -756,39 +834,44 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 
     if( currTestMode.type == ETM_INTER_ME )
     {
-#if ENABLE_TIME_PROFILE
-    TimeProfiler::start(INTER_OVERALL);
-    
-    STAGE interStage = (STAGE) partitioner.currQtDepth;
-    TimeProfiler::start(interStage);
+#if ENABLE_OPT_TECH_DT
+      if(! OptTechDT::skipCheckRD) {
 #endif
-      if( ( currTestMode.opts & ETO_IMV ) != 0 )
-      {
-        const bool skipAltHpelIF = (currTestMode.getAmvrSearchMode() == EncTestMode::AmvrSearchMode::HALF_PEL)
-                                   && (bestIntPelCost > 1.25 * bestCS->cost);
-        if (!skipAltHpelIF)
-        {
-          tempCS->bestCS = bestCS;
-          xCheckRDCostInterAmvr(tempCS, bestCS, partitioner, currTestMode, bestIntPelCost);
-          tempCS->bestCS = nullptr;
-          splitRdCostBest[CTU_LEVEL] = bestCS->cost;
-          tempCS->splitRdCostBest = splitRdCostBest;
-        }
-      }
-      else
-      {
-        tempCS->bestCS = bestCS;
-        xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
-        tempCS->bestCS = nullptr;
-        splitRdCostBest[CTU_LEVEL] = bestCS->cost;
-        tempCS->splitRdCostBest = splitRdCostBest;
-      }
+#if ENABLE_TIME_PROFILE
+        TimeProfiler::start(INTER_OVERALL);
+        
+        STAGE interStage = (STAGE) partitioner.currQtDepth;
+        TimeProfiler::start(interStage);
+#endif
+          if( ( currTestMode.opts & ETO_IMV ) != 0 )
+          {
+            const bool skipAltHpelIF = (currTestMode.getAmvrSearchMode() == EncTestMode::AmvrSearchMode::HALF_PEL)
+                                      && (bestIntPelCost > 1.25 * bestCS->cost);
+            if (!skipAltHpelIF)
+            {
+              tempCS->bestCS = bestCS;
+              xCheckRDCostInterAmvr(tempCS, bestCS, partitioner, currTestMode, bestIntPelCost);
+              tempCS->bestCS = nullptr;
+              splitRdCostBest[CTU_LEVEL] = bestCS->cost;
+              tempCS->splitRdCostBest = splitRdCostBest;
+            }
+          }
+          else
+          {
+            tempCS->bestCS = bestCS;
+            xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
+            tempCS->bestCS = nullptr;
+            splitRdCostBest[CTU_LEVEL] = bestCS->cost;
+            tempCS->splitRdCostBest = splitRdCostBest;
+          }
 
 #if ENABLE_TIME_PROFILE
-    TimeProfiler::stop(interStage);
-    TimeProfiler::stop(INTER_OVERALL);
+        TimeProfiler::stop(interStage);
+        TimeProfiler::stop(INTER_OVERALL);
 #endif
-
+#if ENABLE_OPT_TECH_DT
+      }
+#endif
     }
     else if (currTestMode.type == ETM_HASH_INTER)
     {

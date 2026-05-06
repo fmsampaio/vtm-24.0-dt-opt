@@ -1232,6 +1232,9 @@ protected:
   std::vector<double>                  m_generativeFaceVideoEnhancementSEIPupilRightEyeCoordinateY;
   std::string                          m_generativeFaceVideoEnhancementSEIPayloadFilename;
 
+
+  std::string m_encoderConfig;
+
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;
   friend class TExt360AppEncCfg;
@@ -1310,6 +1313,12 @@ public:
   void  create    ();                                         ///< create option handling class
   void  destroy   ();                                         ///< destroy option handling class
   bool  parseCfg  ( int argc, char* argv[] );                ///< parse configuration file to fill member variables
+
+  int getSourceWidth() { return m_sourceWidth; }
+  int getSourceHeight() { return m_sourceHeight; }
+  int getFramesToBeEncoded() { return m_framesToBeEncoded; }
+  std::string getEncoderConfig() { return m_encoderConfig; }
+  int getQP() { return m_iQP; }
 };
 
 //! \}

@@ -31,7 +31,7 @@ class OptTechDT {
         static int encoderConfig;
         static bool skipCheckRD;
 
-        static void init(int w, int h, int nf, std::string encCfg, int qp);
+        static void init(int w, int h, int nf, bool isLowDelay, int qp);
 
         static double calculateDiffVariance(int xBlk, int yBlk, int wBlk, int hBlk, PelUnitBuf origBuff, PelUnitBuf recoBuff);
         static double calculateBlockVariance(int xBlk, int yBlk, int wBlk, int hBlk, PelUnitBuf origBuff);

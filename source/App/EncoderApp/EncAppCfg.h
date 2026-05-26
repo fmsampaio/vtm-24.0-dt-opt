@@ -1233,7 +1233,8 @@ protected:
   std::string                          m_generativeFaceVideoEnhancementSEIPayloadFilename;
 
 
-  std::string m_encoderConfig;
+  // [legacy] superseded by m_isLowDelay (auto-derived from the GOP/RPL structure)
+  // std::string m_encoderConfig;
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;
@@ -1317,7 +1318,11 @@ public:
   int getSourceWidth() { return m_sourceWidth; }
   int getSourceHeight() { return m_sourceHeight; }
   int getFramesToBeEncoded() { return m_framesToBeEncoded; }
-  std::string getEncoderConfig() { return m_encoderConfig; }
+  // [legacy] EncoderConfig string was used to inform the DT optimization technique
+  // whether the encoder ran in RA/LD. Replaced by getIsLowDelay(), derived
+  // automatically from the GOP/RPL structure (see EncAppCfg::xCheckParameter).
+  // std::string getEncoderConfig() { return m_encoderConfig; }
+  bool getIsLowDelay() { return m_isLowDelay; }
   int getQP() { return m_iQP; }
 };
 

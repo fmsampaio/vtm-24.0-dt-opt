@@ -1975,7 +1975,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "ExplicitILRP",                                   m_explicitILRP,                           false, "Explicitly define Inter-Layer Reference pictures in GOP entry")
   ( "EncInterLayerOpt",                               m_encILOpt,                               false, "Enable encoder optimization to favor inter-layer predictions")
   ( "EncInterLayerOptLambdaModifier",                 m_encILOptLambdaModifier,         ( double )0.1, "lambda modifier for modified RD cost in Inter-Layer criterion")
-  ( "EncoderConfig",                                  m_encoderConfig,                std::string(""), "Encoder configuration (RA, LD, AI) to pass to optimization technique configuration.");
+  // [legacy] RA/LD is now derived automatically from the GOP/RPL structure
+  // (m_isLowDelay) instead of being read from the .cfg files, so this option
+  // is no longer required by the DT optimization technique.
+  // ( "EncoderConfig",                                  m_encoderConfig,                std::string(""), "Encoder configuration (RA, LD, AI) to pass to optimization technique configuration.")
+  ;
 
     ;
 

@@ -6,14 +6,17 @@ int OptTechDT::encoderConfig;
 
 bool OptTechDT::skipCheckRD;
 
-void OptTechDT::init(int w, int h, int nf, std::string encCfg, int qp) {
+void OptTechDT::init(int w, int h, int nf, bool isLowDelay, int qp) {
     width = w;
     height = h;
     numOfFrames = nf;
-    encoderConfig = (encCfg == "RA") ? ENCODER_RA_CONFIG : ENCODER_LD_CONFIG;
+    // RA/LD is derived automatically from the GOP/RPL structure (EncAppCfg::m_isLowDelay)
+    // instead of being read from the .cfg files.
+    // [legacy] encoderConfig = (encCfg == "RA") ? ENCODER_RA_CONFIG : ENCODER_LD_CONFIG;
+    encoderConfig = isLowDelay ? ENCODER_LD_CONFIG : ENCODER_RA_CONFIG;
     quantPar = qp;
 
-    // std::cout << "[DBG] Encoder Configuration: " << encoderConfig << " " << encCfg << std::endl;
+    // std::cout << "[DBG] Encoder Configuration: " << encoderConfig << (isLowDelay ? " LD" : " RA") << std::endl;
 
     depthMapAllocSize = (width / DEPTH_MAP_RESOLUTION) * (height / DEPTH_MAP_RESOLUTION);
 

@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
     pcEncApp[0]->getSourceWidth(), 
     pcEncApp[0]->getSourceHeight(),
     pcEncApp[0]->getFramesToBeEncoded(),
-    pcEncApp[0]->getEncoderConfig(),
+    pcEncApp[0]->getIsLowDelay(),
     pcEncApp[0]->getQP() );
 #endif
 
